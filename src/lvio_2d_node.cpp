@@ -2,6 +2,8 @@
 #include "trajectory/trajectory.h"
 #include "utilies/params.h"
 #include "trajectory/dispatch.h"
+
+
 class Node
 {
 public:
@@ -46,6 +48,7 @@ private:
     {
         if (!PARAM(enable_camera))
             return;
+        
         sensor_queues.add_camera_msg(msg);
     }
 };

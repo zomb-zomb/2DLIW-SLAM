@@ -13,6 +13,8 @@ find_package(catkin REQUIRED COMPONENTS
   image_transport
   roscpp
   tf2_ros
+  grid_map_core
+  grid_map_ros
 )
 find_package(OpenCV REQUIRED)
 find_package(Ceres REQUIRED)

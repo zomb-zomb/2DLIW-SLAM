@@ -36,6 +36,8 @@ camera_K: [ 611.45 , 0.0     , 433.203 ,
 
 FPS: 1000
 
+# FPS: 40
+
 g: 9.8
 
 
@@ -46,6 +48,10 @@ imu_bias_acc_sigma:  [ 0.00499 , 0.00499  , 0.00499 ]
 imu_noise_gyro_sigma: [ 0.003208 , 0.003208   , 0.003208  ]
 imu_bias_gyro_sigma:  [ 0.000499 , 0.000499  , 0.000499 ]
 
+# imu_noise_acc_sigma: [ 0.0  ,0.0  , 0.0  ]
+# imu_bias_acc_sigma:  [ 0.0 , 0.0  , 0.0 ]
+# imu_noise_gyro_sigma: [ 0.0 , 0.0   , 0.0  ]
+# imu_bias_gyro_sigma:  [ 0.0 , 0.0  , 0.0 ]
 #per meter
 # len dir yaw
 wheel_sigma: [0.2 , 99999.0 , 999.99]
@@ -91,8 +97,8 @@ line_to_line_sigma: 0.01
 
 
 #keyfram param
-key_frame_p_motion_threshold : 0.05
-key_frame_q_motion_threshold : 0.05
+key_frame_p_motion_threshold : 0.01
+key_frame_q_motion_threshold : 0.01
 
 
 #laser loop
@@ -120,9 +126,13 @@ use_ground_q_factor: true
 ref_motion_filter_p: 0.01
 ref_motion_filter_q: 0.01
 ref_n_accumulation: 100
-fast_mode: false
+fast_mode: true
 
 
 #ouput
-output_tum: false
-output_dir: "/home/ubuntu/bag/cafe1-1_2-rosbag/2/"
+output_tum: true
+output_dir: "/media/esac/841D-1E17/dataset/paths/cafe/2dliw/"
+
+#占据栅格概率
+probility_occ: 1
+probility_free: 0.6

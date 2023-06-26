@@ -96,7 +96,8 @@ namespace lvio_2d
             Eigen::Vector3d loop_sigma_p;
             Eigen::Vector3d loop_sigma_q;
 
-
+            double probility_occ;
+            double probility_free;
 
             int ref_n_accumulation;
             static manager::ptr get_param_manager();

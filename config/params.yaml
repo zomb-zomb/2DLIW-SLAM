@@ -96,8 +96,8 @@ line_to_line_sigma: 0.001
 
 
 #keyfram param
-key_frame_p_motion_threshold : 0.1
-key_frame_q_motion_threshold : 0.1
+key_frame_p_motion_threshold : 0.15
+key_frame_q_motion_threshold : 0.15
 
 
 #laser loop

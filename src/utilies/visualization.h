@@ -45,6 +45,8 @@ namespace lvio_2d
         std::unordered_map<std::string, ros::Publisher> odom_pubs;
         ros::Publisher marker_pub;
         ros::Publisher map_pub;
+        ros::Publisher grid_pub;
+
 
         tf2_ros::TransformBroadcaster tf_br;
 
@@ -75,5 +77,8 @@ namespace lvio_2d
         void do_odom_to_show(const std::string &topic, const Eigen::Isometry3d &pose, const Eigen::Vector3d &linear, const Eigen::Vector3d &angular);
         void do_feature_map_to_show(const feature_map::ptr &feature_map_ptr);
         void do_laser_match_to_show(const laser_match::ptr &laser_match_ptr);
+        void do_map_initialization();
+
+        void do_laser_map_initializaton();
     };
 }; // namespace lvio_2d

@@ -91,8 +91,8 @@ line_to_line_sigma: 0.01
 
 
 #keyfram param
-key_frame_p_motion_threshold : 0.05
-key_frame_q_motion_threshold : 0.05
+key_frame_p_motion_threshold : 0.01
+key_frame_q_motion_threshold : 0.01
 
 
 #laser loop
@@ -124,5 +124,5 @@ fast_mode: false
 
 
 #ouput
-output_tum: false
-output_dir: "/home/ubuntu/bag/corridor/2/"
+output_tum: true
+output_dir: "/media/esac/841D-1E17/dataset/paths/corridor/2dliw/"

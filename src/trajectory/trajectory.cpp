@@ -157,20 +157,28 @@ namespace lvio_2d
             ROS_WARN("abort camera msg.wait for wheel odom init.");
             return;
         }
+        
         auto wheel_result_filter = wheel_odom_preintegration_.get_preintegraption_result();
         auto laser_delta_filter = wheel_delta_to_laser_delta(wheel_result_filter->delta_Tij);
 
-        if (status == INITIALIZING && is_static(laser_delta_filter, PARAM(p_motion_threshold), PARAM(q_motion_threshold)))
-            return;
 
+        if (status == INITIALIZING && is_static(laser_delta_filter, PARAM(p_motion_threshold), PARAM(q_motion_threshold)))
+        {
+            return;
+        }
+            
         if (PARAM(enable_camera))
             if (!frame_infos.empty() && frame_infos.back()->type == frame_info::laser)
-                return;
-
+                {
+                    return;
+                }
+                
         if (status == TRACKING && imu_preintegraption_.Dt < PARAM(min_delta_t))
+        {
             return;
-
-        current_index++;
+        }
+            
+        current_index++;  
 
         // 对齐时间戳
         wheel_odom_preintegration_.update_only_t(time);
@@ -272,6 +280,7 @@ namespace lvio_2d
         laser_manger_.add_scan(scan_ptr, current_p, current_q);
         recorder.end_record("add scan to ref");
 
+        
         update_path_and_pub(wheel_delta_to_imu_delta(wheel_result->delta_Tij));
         return;
     }

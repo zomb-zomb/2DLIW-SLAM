@@ -1,4 +1,9 @@
+#include <grid_map_ros/grid_map_ros.hpp>
+#include <iostream>
+#include <unordered_map>
+#include <map>
 #include "utilies/visualization.h"
+#include "utilies/utilies.h"
 namespace lvio_2d
 {
     geometry_msgs::Point point_eigen_to_ros(const Eigen::Vector3d &p)
@@ -30,7 +35,7 @@ namespace lvio_2d
             ret = std::make_shared<visualization>();
         return ret;
     }
-    int check_map_and_calc_index(const nav_msgs::OccupancyGrid &map, const Eigen::Vector3d &target)
+    inline int check_map_and_calc_index(const nav_msgs::OccupancyGrid &map, const Eigen::Vector3d &target)
     {
         Eigen::Vector3d origin(0, 0, 0);
         origin(0) = map.info.origin.position.x;
@@ -47,13 +52,12 @@ namespace lvio_2d
             return -1;
         return y * w + x;
     }
-    void update_occupancy_grid(nav_msgs::OccupancyGrid &map, const Eigen::Vector3d &emit_origin,
+/*     void update_occupancy_grid(nav_msgs::OccupancyGrid &map, const Eigen::Vector3d &emit_origin,
                                const Eigen::Vector3d &target)
     {
         double len = (target - emit_origin).norm();
         Eigen::Vector3d unit = (target - emit_origin) / len;
         double step = map.info.resolution / 2;
-
         for (double tr = 0; tr <= len; tr += step)
         {
             Eigen::Vector3d cp = emit_origin + unit * tr;
@@ -72,14 +76,128 @@ namespace lvio_2d
                     map.data[index] = 100;
             }
         }
+    } */
+    // gassian filter for occupancy grid
+    double gaussian_filter(nav_msgs::OccupancyGrid &map, int index) 
+    {
+        int rows = map.info.height;
+        int cols = map.info.width;
+
+        double kernel[3][3] = {{1, 1, 1},
+                            {1, 8, 1},
+                            {1, 1, 1}};
+
+        double sum = 0.0;
+        double sum_kernel = 0.0;
+
+        int i = index / cols;
+        int j = index % cols;
+
+        for (int k = -1; k <= 1; k++) {
+            for (int l = -1; l <= 1; l++) {
+                int i_new = i + k;
+                int j_new = j + l;
+                int index_new = i_new * cols + j_new;
+
+                if (i_new >= 0 && i_new < rows && j_new >= 0 && j_new < cols) {
+                    if(map.data[index_new] == -1)
+                    {
+                        sum += 100;
+                        sum_kernel += kernel[k+1][l+1];
+                        continue;
+                    }
+                    sum += kernel[k+1][l+1] * static_cast<double>(map.data[index_new]);
+                    sum_kernel += kernel[k+1][l+1];
+                }
+            }
+        }
+
+        return sum / sum_kernel;
     }
+    template <typename T>
+    inline const T& clamp(const T& v, const T& lo, const T& hi) 
+    {
+        return v < lo ? lo : (v > hi ? hi : v);
+    }    
+    inline double odds(double probability) 
+    {
+        return probability /( (1.0 - probability) + 1e-6 );
+    }
+    inline double probability_from_odds(double odds) 
+    {
+        return odds /( (odds + 1.0) + 1e-6 );
+    }
+    void update_occupancy_grid(nav_msgs::OccupancyGrid &map,std::vector<int> &m_hits,std::vector<int> &m_misses,
+                                const Eigen::Vector3d &emit_origin,const Eigen::Vector3d &target)
+    {
+        double len = (target - emit_origin).norm();
+        Eigen::Vector3d unit = (target - emit_origin) / len;
+        // double step = map.info.resolution / 2;
+        double step = map.info.resolution;
+        
+        // detect the free space
+        for (double tr = 0; tr <= len; tr += step) 
+        {
+            Eigen::Vector3d cp = emit_origin + unit * tr;
+            int index = check_map_and_calc_index(map, cp);
+            if(index == -1)
+                continue;
+            if(map.data[index] == -1)
+            {
+                map.data[index] = 50;
+            }
+            m_misses[index] += 1; 
+            // accroding to hits and misses to update the map
+            double p_hit = (double) m_hits[index] / (m_hits[index] + m_misses[index]);
+            // double p_miss = (double) m_misses[index] / (m_hits[index] + m_misses[index]);
+            double p_prior = gaussian_filter(map, index) / 100.0;
+            // double p_prior = static_cast<double>(map.data[index]) / 100.0;
+            // double p_occ = (p_hit * p_prior) / (p_hit * p_prior + p_miss * (1 - p_prior)) + 0.001;
+            double p_occ = clamp(probability_from_odds(odds(p_prior) * odds(p_hit)), 0.0, 1.0) + 0.001;
+            // std::cout << "p_hit: " << p_hit << " p_miss: " << p_miss << " p_prior: " << p_prior << " p_occ: " << p_occ << std::endl;   
+
+            int value = static_cast<int>(std::round(p_occ * 100));
+            int8_t byte_value = static_cast<int8_t>(value);
+            map.data[index] = byte_value;            
+        }
+        // detect the occupied space
+        {
+            int index = check_map_and_calc_index(map, target);
+            if(index == -1)
+                return;
+            if(map.data[index] == -1)
+            {
+                map.data[index] = 100;
+            }
+            m_hits[index] += 1; 
+            double p_hit = (double)m_hits[index] / (m_hits[index] + m_misses[index]);
+            // double p_miss = (double)m_misses[index] / (m_hits[index] + m_misses[index]);
+            // double p_prior = PARAM(probility_occ);
+            // double p_prior = static_cast<double>(map.data[index]) / 100.0;
+            map.data[index] = 100;
+            double p_prior = gaussian_filter(map, index) / 100.0;
+            // double p_occ = (p_hit * p_prior) / (p_hit * p_prior + p_miss * (1 - p_prior)) + 0.001;
+            double p_occ = clamp(probability_from_odds(odds(p_prior) * odds(p_hit)), 0.0, 1.0) + 0.001;
+
+            int value = static_cast<int>(std::round(p_occ * 100));
+            int8_t byte_value = static_cast<int8_t>(value);
+            map.data[index] = byte_value;
+            // std::cout << "p_hit: " << p_hit << " p_miss: " << p_miss << " p_prior: " << p_prior << " p_occ: " << p_occ << std::endl;   
+            // std::cout << "m_hits: " << m_hits[index] << " m_misses: " << m_misses[index] << " map.data[index]: " << (int)map.data[index] << std::endl;                                
+        }
+    }
+
     visualization::visualization() : it(nh), T_imu_to_camera(PARAM(T_imu_to_camera)),
                                      T_imu_to_laser(PARAM(T_imu_to_laser)),
                                      T_imu_to_wheel(PARAM(T_imu_to_wheel))
     {
         marker_pub = nh.advertise<visualization_msgs::Marker>("vis", 10);
         map_pub = nh.advertise<nav_msgs::OccupancyGrid>("map", 10);
+        grid_pub = nh.advertise<grid_map_msgs::GridMap>("grid_map", 10);
         quit = false;
+        // initialization
+        do_laser_map_initializaton();
+        
         visualization_thread = std::thread(std::bind(&visualization::do_visualization, this));
     }
     visualization::~visualization()
@@ -366,7 +484,8 @@ namespace lvio_2d
         msg.twist.twist.linear.z = linear(2);
         odom_pubs[topic].publish(msg);
     }
-    void visualization::do_laser_map_to_show(const laser_map::ptr &laser_map_ptr)
+
+/*     void visualization::do_laser_map_to_show(const laser_map::ptr &laser_map_ptr)
     {
 
         visualization_msgs::Marker points_marker;
@@ -395,7 +514,99 @@ namespace lvio_2d
             {
                 Eigen::Vector3d p = T_w_l *
                                     laser_map_ptr->submaps[i]->scan_ptr->points[j];
-                points_marker.points.push_back(point_eigen_to_ros(p));
+                // points_marker.points.push_back(point_eigen_to_ros(p));
+                if (p(0) > max_x)
+                    max_x = p(0);
+                if (p(0) < min_x)
+                    min_x = p(0);
+                if (p(1) > max_y)
+                    max_y = p(1);
+                if (p(1) < min_y)
+                    min_y = p(1);
+            }
+        }
+
+        Eigen::Vector3d origin((max_x + min_x) / 2, (max_y + min_y) / 2, 0);
+
+        int w = (max_x - min_x) / map_res + 1;
+        int h = (max_y - min_y) / map_res + 1;
+
+        nav_msgs::OccupancyGrid map;
+        map.header.frame_id = "world";
+        map.header.stamp = ros::Time::now();
+        map.info.origin.position.x = min_x;
+        map.info.origin.position.y = min_y;
+        map.info.origin.position.z = 0;
+
+        map.info.origin.orientation.x = 0;
+        map.info.origin.orientation.y = 0;
+        map.info.origin.orientation.z = 0;
+        map.info.origin.orientation.w = 1;
+
+        map.info.width = w;
+        map.info.height = h;
+        map.info.resolution = map_res;
+        map.data.resize(w * h);
+        for (int i = 0; i < w * h; i++)
+        {
+            map.data[i] = -1;
+        }
+        
+
+        for (int i = 0; i < laser_map_ptr->submaps.size(); i++)
+        {
+            Eigen::Isometry3d T_w_l = lie::make_tf(laser_map_ptr->submaps[i]->current_p, laser_map_ptr->submaps[i]->current_q) *
+                                      PARAM(T_imu_to_laser);
+            for (int j = 0; j < laser_map_ptr->submaps[i]->scan_ptr->points.size(); j++)
+            {
+                Eigen::Vector3d p = T_w_l *
+                                    laser_map_ptr->submaps[i]->scan_ptr->points[j];
+                Eigen::Vector3d emit_origin = T_w_l.matrix().block<3, 1>(0, 3);
+                update_occupancy_grid(map,emit_origin, p);
+            }
+        }
+
+        map_pub.publish(map);
+        marker_pub.publish(points_marker);
+    } */
+    void visualization::do_laser_map_initializaton()
+    {
+        // m_hits.reserve(1600 * 1600);
+        // m_misses.reserve(1600 * 1600);
+        // m_hits.resize(1600 * 1600);
+        // m_misses.resize(1600 * 1600);  
+        return;
+    }
+    void visualization::do_laser_map_to_show(const laser_map::ptr &laser_map_ptr)
+    {
+
+        visualization_msgs::Marker points_marker;
+        points_marker.header.frame_id = "world";
+        points_marker.header.stamp = ros::Time::now();
+        points_marker.ns = "laser_map";
+        points_marker.action = visualization_msgs::Marker::ADD;
+        points_marker.pose.orientation.w = 1.0;
+        points_marker.id = 2;
+        points_marker.type = visualization_msgs::Marker::POINTS;
+        points_marker.scale.x = 0.02;
+        points_marker.scale.y = 0.02;
+        points_marker.color.a = 1.0;
+        points_marker.color.b = 0.0;
+        points_marker.color.g = 0.0;
+        points_marker.color.r = 0.0;
+
+        double max_x = TIME_MIN, max_y = TIME_MIN;
+        double min_x = TIME_MAX, min_y = TIME_MAX;
+        double map_res = 0.02;
+        for (int i = 0; i < laser_map_ptr->submaps.size(); i++)
+        {
+            Eigen::Isometry3d T_w_l = lie::make_tf(laser_map_ptr->submaps[i]->current_p, laser_map_ptr->submaps[i]->current_q) *
+                                      PARAM(T_imu_to_laser);
+            for (int j = 0; j < laser_map_ptr->submaps[i]->scan_ptr->points.size(); j++)
+            {
+                Eigen::Vector3d p = T_w_l *
+                                    laser_map_ptr->submaps[i]->scan_ptr->points[j];
+                // points_marker.points.push_back(point_eigen_to_ros(p));
                 if (p(0) > max_x)
                     max_x = p(0);
                 if (p(0) < min_x)
@@ -433,6 +644,16 @@ namespace lvio_2d
             map.data[i] = -1;
         }
 
+        // hit and miss 
+        std::vector<int> m_hits;
+        std::vector<int> m_misses;
+        m_hits.reserve(w * h);
+        m_misses.reserve(w * h);
+        m_hits.resize(w * h);
+        m_misses.resize(w * h);      
+        m_hits.assign(m_hits.size(), 0);
+        m_misses.assign(m_misses.size(), 0);
+
         for (int i = 0; i < laser_map_ptr->submaps.size(); i++)
         {
             Eigen::Isometry3d T_w_l = lie::make_tf(laser_map_ptr->submaps[i]->current_p, laser_map_ptr->submaps[i]->current_q) *
@@ -442,10 +663,9 @@ namespace lvio_2d
                 Eigen::Vector3d p = T_w_l *
                                     laser_map_ptr->submaps[i]->scan_ptr->points[j];
                 Eigen::Vector3d emit_origin = T_w_l.matrix().block<3, 1>(0, 3);
-                update_occupancy_grid(map, emit_origin, p);
-            }
+                update_occupancy_grid(map,m_hits,m_misses,emit_origin, p);
+            }            
         }
-
         map_pub.publish(map);
         marker_pub.publish(points_marker);
     }
@@ -671,7 +891,9 @@ namespace lvio_2d
             }
             if (has_laser_map_taks)
             {
-                do_laser_map_to_show(laser_map_ptr);
+                // a new thread to do laser map,because it is time consuming
+                std::thread t(&visualization::do_laser_map_to_show, this, laser_map_ptr);
+                t.detach();
             }
             if (has_odom_tasks)
             {

@@ -1,6 +1,9 @@
 <launch>
+    <arg name="bag_filename" default="/media/esac/841D-1E17/dataset/office/vinsoffice1-5.bag"/>
+
     <node type="lvio_2d_node" pkg="lvio_2d" name="lvio_2d_node"  output="screen" >
         <rosparam file="$(find lvio_2d)/config/office.yaml" command="load"/> 
     </node>
     <node name="rviz" pkg="rviz" type="rviz" args="-d $(find lvio_2d)/launch/display.rviz" />
+    <node name="playbag" pkg="rosbag" type="play" args="--clock $(arg bag_filename)" />
 </launch>
