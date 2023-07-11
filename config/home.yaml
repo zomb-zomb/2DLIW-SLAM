@@ -36,6 +36,8 @@ camera_K: [ 611.45 , 0.0     , 433.203 ,
 
 FPS: 1000
 
+# FPS: 40
+
 g: 9.8
 
 
@@ -46,9 +48,13 @@ imu_bias_acc_sigma:  [ 0.00499 , 0.00499  , 0.00499 ]
 imu_noise_gyro_sigma: [ 0.003208 , 0.003208   , 0.003208  ]
 imu_bias_gyro_sigma:  [ 0.000499 , 0.000499  , 0.000499 ]
 
+# imu_noise_acc_sigma: [ 0.0  ,0.0  , 0.0  ]
+# imu_bias_acc_sigma:  [ 0.0 , 0.0  , 0.0 ]
+# imu_noise_gyro_sigma: [ 0.0 , 0.0   , 0.0  ]
+# imu_bias_gyro_sigma:  [ 0.0 , 0.0  , 0.0 ]
 #per meter
 # len dir yaw
-wheel_sigma: [0.02 , 99999.0 , 999.99]
+wheel_sigma: [0.2 , 99999.0 , 999.99]
 
 
 
@@ -78,12 +84,12 @@ q_motion_threshold : 0.05
 #laser parameters
 w_laser_each_scan: 100.0
 h_laser_each_scan: 100.0
-laser_resolution: 0.1  
+laser_resolution: 0.03 
 
 #meter
-line_continuous_threshold: 0.5
+line_continuous_threshold: 0.1
 line_min_len: 0.05
-line_max_dis: 0.1
+line_max_dis: 0.03
 
 #degree
 line_max_tolerance_angle: 175.0
@@ -99,10 +105,10 @@ key_frame_q_motion_threshold : 0.01
 a_res: 0.03  
 d_res: 0.03
 submap_count: 10
-laser_loop_min_match_threshold: 7
+laser_loop_min_match_threshold: 5
 loop_detect_min_interval: 300
 verify_loop_rate: 0.5
-loop_max_dis: 99999.0
+loop_max_dis: 1.0
 loop_edge_k: 10.0
 loop_max_tf_p: 1.0
 loop_max_tf_q: 0.5
@@ -120,9 +126,13 @@ use_ground_q_factor: true
 ref_motion_filter_p: 0.01
 ref_motion_filter_q: 0.01
 ref_n_accumulation: 100
-fast_mode: false
+fast_mode: true
 
 
 #ouput
 output_tum: true
-output_dir: "/home/ubuntu/dataset/paths/corridor/2dliw10/"
+output_dir: "/home/ubuntu/dataset/paths/home/2dliw4/"
+
+#占据栅格概率
+probility_occ: 1
+probility_free: 0.6

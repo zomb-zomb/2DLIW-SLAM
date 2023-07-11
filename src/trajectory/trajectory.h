@@ -47,6 +47,7 @@ namespace lvio_2d
         Eigen::Matrix<double, 3, 1> current_v;
         Eigen::Matrix<double, 6, 1> current_bs;
 
+        
         // 在local下的当前的角速度
         Eigen::Matrix<double, 3, 1> current_angular_local;
         TRAJECTORY_STATUS status;
@@ -81,6 +82,8 @@ namespace lvio_2d
         std::fstream o_fstream;
         std::string o_path;
         record recorder;
+        // for count
+        int cnt;
     };
 
 }; // namespace lvio_2d

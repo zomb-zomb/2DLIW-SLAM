@@ -131,7 +131,7 @@ fast_mode: true
 
 #ouput
 output_tum: true
-output_dir: "/media/esac/841D-1E17/dataset/paths/cafe/2dliw/"
+output_dir: "/home/ubuntu/dataset/paths/cafe/2dliw3/"
 
 #占据栅格概率
 probility_occ: 1

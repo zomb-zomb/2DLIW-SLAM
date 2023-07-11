@@ -552,8 +552,8 @@ namespace lvio_2d
         recorder.begin_record();
         opt_solver.marginalization(frame_infos, feature_manger_);
         recorder.end_record("marginalization");
-        pop_frame_for_tracking();
 
+        pop_frame_for_tracking();
         // output
         Eigen::Isometry3d current_tf = lie::make_tf(current_p, current_q);
         Eigen::Isometry3d current_tf_base = current_tf * PARAM(T_imu_to_wheel);
@@ -600,13 +600,20 @@ namespace lvio_2d
     {
 
         int n = frame_infos.size();
-        int k = n - 1;
+        int k = 0;
+        int cnt = 0;
         if (PARAM(enable_laser))
             for (int i = n - 1; i > -1; i--)
             {
                 if (frame_infos[i]->type == frame_info::laser)
                 {
+                    cnt++;
+                }
+                // sliding window size is 5
+                if(cnt == 5)
+                {
                     k = i;
+                    cnt = 0;
                     break;
                 }
             }

@@ -91,8 +91,8 @@ line_to_line_sigma: 0.001
 
 
 #keyfram param
-key_frame_p_motion_threshold : 0.01
-key_frame_q_motion_threshold : 0.01
+key_frame_p_motion_threshold : 0.05
+key_frame_q_motion_threshold : 0.05
 
 
 #laser loop
@@ -125,4 +125,4 @@ fast_mode: false
 
 #ouput
 output_tum: true 
-output_dir: "/media/esac/841D-1E17/dataset/paths/office/2dliw/"
+output_dir: "/home/ubuntu/dataset/paths/office/2dliw2/"

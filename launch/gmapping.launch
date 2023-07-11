@@ -1,9 +1,10 @@
 <?xml version="1.0"?>
 
 <launch>
-  <!-- <arg name="bag_filename" default="/media/esac/841D-1E17/dataset/corridor/vins_corridor1-2.bag"/> -->
-  <!-- <arg name="bag_filename" default="/media/esac/841D-1E17/dataset/cafe/vins_cafe1-2.bag"/> -->
-  <arg name="bag_filename" default="/media/esac/841D-1E17/dataset/office/vinsoffice1-5.bag"/>
+  <!-- <arg name="bag_filename" default="/home/ubuntu/dataset//corridor/vins_corridor1-2.bag"/> -->
+  <!-- <arg name="bag_filename" default="/home/ubuntu/dataset/cafe/vins_cafe1-2.bag"/> -->
+  <!-- <arg name="bag_filename" default="/home/ubuntu/dataset/office/vinsoffice1-5.bag"/> -->
+  <arg name="bag_filename" default="/home/ubuntu/dataset/home/vins1.bag"/>
   <arg name="tf_map_scanmatch_transform_frame_name" default="scanmatcher_frame"/>
   <arg name="base_frame" default="base_link"/>
   <arg name="odom_frame" default="base_odom"/>
@@ -59,6 +60,6 @@
     <param name="tf_map_scanmatch_transform_frame_name" value="$(arg tf_map_scanmatch_transform_frame_name)" />
   </node>
   <node name="rviz" pkg="rviz" type="rviz" args="-d $(find lvio_2d)/launch/gmapping.rviz" />
-  <node name="playbag" pkg="rosbag" type="play" args="--clock $(arg bag_filename)" />
+  <node name="playbag" pkg="rosbag" type="play" args=" --clock $(arg bag_filename)" />
   <!--<node pkg="tf" type="static_transform_publisher" name="map_nav_broadcaster" args="0 0 0 0 0 0 map nav 100"/>-->
 </launch>
