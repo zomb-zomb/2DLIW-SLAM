@@ -540,6 +540,7 @@ namespace lvio_2d
         static double last_outpu_time = TIME_MIN;
         estimate_features(false);
         recorder.begin_record();
+        // std::cout << "frame size:" << frame_infos.size() << std::endl;
         opt_solver.solve(frame_infos, feature_manger_);
         recorder.end_record("solve");
 
@@ -609,8 +610,8 @@ namespace lvio_2d
                 {
                     cnt++;
                 }
-                // sliding window size is 5
-                if(cnt == 5)
+                // sliding window size
+                if(cnt >= PARAM(sliding_window_size))
                 {
                     k = i;
                     cnt = 0;

@@ -4,8 +4,11 @@
 #include "factor/laser_factor.h"
 #include "factor/point_factor.h"
 #include "trajectory/laser_manager.h"
+#include "factor/solver.h"
 #include <opencv2/opencv.hpp>
+#include <memory>
 static lvio_2d::record *recorder;
+
 static inline int CountOnes(uint64_t n)
 {
     int count = 0;
@@ -36,6 +39,8 @@ namespace lvio_2d
 } // namespace lvio_2d
 namespace lvio_2d
 {
+    Eigen::Isometry3d ICP_solve_by_opt(std::vector<Eigen::Vector3d> &p1, std::vector<Eigen::Vector3d> &p2,
+                                    const Eigen::Isometry3d &init);
     static bool is_index_valid(const int &r, const int &c, const int &w, const int &h)
     {
         return r >= 0 && r < h && c >= 0 && c < w;
@@ -404,9 +409,9 @@ namespace lvio_2d
         }
         task_cv.notify_one();
     }
-    void keyframe_manager::update_other_frame(const std::deque<frame_info::ptr> &frame_infos)
+    void keyframe_manager::update_other_frame(const std::deque<frame_info::ptr> &keyframe_queue)
     {
-        other_frame = frame_infos;
+        other_frame = keyframe_queue;
         {
             std::unique_lock<std::mutex> lc(mu);
 
@@ -415,7 +420,42 @@ namespace lvio_2d
         }
         task_cv.notify_one();
     }
-    void keyframe_manager::do_add_keyframe(const frame_info::ptr &frame_ptr)
+
+    Eigen::Isometry3d keyframe_manager::ICP_solve_by_keyframe(int index1,int index2,Eigen::Isometry3d tf12)
+    {
+        laser_match_point::ptr laser_match = nullptr;
+        laser_match = laser_map_feature::match_map(laser_map_features[index1], laser_map_features[index2]);
+        if(!laser_match)
+        {
+            return tf12;
+        }
+        // std::cout << "laser match" << std::endl;
+        laser_match->tf1 = tfs_tracking[index1];
+        laser_match->tf2 = tfs_tracking[index2];
+        laser_match->index1 = index1;
+        laser_match->index2 = index2;
+        laser_match->scan1 = laser_map_features[index1]->scans.front();
+        laser_match->scan2 = laser_map_features[index2]->scans.front();
+        //  P1A=P1B=T12 P2B
+        std::vector<Eigen::Vector3d> P1As;
+        std::vector<Eigen::Vector3d> P2Bs;
+        Eigen::Isometry3d tf_inv1 = (laser_match->tf1 * PARAM(T_imu_to_wheel)).inverse();
+        Eigen::Isometry3d tf_inv2 = (laser_match->tf2 * PARAM(T_imu_to_wheel)).inverse();
+        for (int i = 0; i < laser_match->p1.size(); i++)
+        {
+            Eigen::Vector3d p1 = tf_inv1 * laser_match->p1[i];
+            p1(2) = 0;
+            P1As.push_back(p1);
+            Eigen::Vector3d p2 = tf_inv2 * laser_match->p2[i];
+            p2(2) = 0;
+            P2Bs.push_back(p2);
+        }
+        Eigen::Isometry3d w_T12 = Eigen::Isometry3d::Identity();
+        w_T12 = ICP_solve_by_opt(P1As, P2Bs, tf12.inverse());
+        return w_T12.inverse();
+
+    }
+    void keyframe_manager::do_add_keyframe(frame_info::ptr &frame_ptr)
     {
         recorder->add_record("add keyframe", 1);
         frame_ptr->image = cv::Mat();
@@ -425,6 +465,7 @@ namespace lvio_2d
             lie::make_tf(frame_ptr->p, frame_ptr->q));
         std::tie(keyframe_queue.back()->p, keyframe_queue.back()->q) =
             lie::log_SE3<double>((modify_delta_tf * tfs_tracking.back()));
+
         if (frame_ptr->type == frame_info::laser)
         {
             laser_frame_count++;
@@ -441,10 +482,19 @@ namespace lvio_2d
             int index1 = keyframe_queue.size() - 2;
             int index2 = keyframe_queue.size() - 1;
             std::unique_lock<std::mutex> lc(mu);
-            Eigen::Isometry3d tf1 = tfs_tracking[index1];
-            Eigen::Isometry3d tf2 = tfs_tracking[index2];
-            Eigen::Isometry3d tf12 = tf1.inverse() * tf2;
-            seq_edges.emplace_back(new edge(index1, index2, tf12));
+            // Eigen::Isometry3d tf1 = tfs_tracking[index1];
+            // Eigen::Isometry3d tf2 = tfs_tracking[index2];
+            // Eigen::Isometry3d tf12 = tf1.inverse() * tf2;              
+            // seq_edges.emplace_back(new edge(index1, index2, tf12));
+            for(int j = 1;j <= 5; j++)
+            {
+                if(index2 - j < 0)
+                    break;
+                Eigen::Isometry3d tfj = tfs_tracking[index2 - j];
+                Eigen::Isometry3d tfi = tfs_tracking[index2];
+                Eigen::Isometry3d tfji = tfj.inverse() * tfi;              
+                seq_edges.emplace_back(new edge(index2 - j, index2, tfji));
+            }
         }
 
         if (frame_ptr->type == frame_info::laser)

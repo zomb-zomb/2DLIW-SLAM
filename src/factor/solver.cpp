@@ -1,3 +1,4 @@
+#include <iostream>
 #include "factor/solver.h"
 #include "timerAndColor/timer.h"
 
@@ -259,6 +260,7 @@ namespace lvio_2d
         if (PARAM(fast_mode))
             return;
 
+        // std::cout << "start marginalization" << std::endl;
         //  按照frame的顺序来
         //  X顺序 |other world point | [p q vbs m] | lastest camera world point
         //  r顺序 [laser_res | imu_res　| wheel_res | ground res ] | all camera res
@@ -668,6 +670,7 @@ namespace lvio_2d
         // laser factor
         for (int i = frame_infos.size() - 1; i < frame_infos.size(); i++)
         {
+            
             if (frame_infos[i]->type == frame_info::laser)
             {
                 if (frame_infos[i]->laser_match_ptr)

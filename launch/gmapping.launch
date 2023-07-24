@@ -1,10 +1,10 @@
 <?xml version="1.0"?>
 
 <launch>
-  <!-- <arg name="bag_filename" default="/home/ubuntu/dataset//corridor/vins_corridor1-2.bag"/> -->
+  <arg name="bag_filename" default="/home/ubuntu/dataset//corridor/vins_corridor1-2.bag"/>
   <!-- <arg name="bag_filename" default="/home/ubuntu/dataset/cafe/vins_cafe1-2.bag"/> -->
   <!-- <arg name="bag_filename" default="/home/ubuntu/dataset/office/vinsoffice1-5.bag"/> -->
-  <arg name="bag_filename" default="/home/ubuntu/dataset/home/vins1.bag"/>
+  <!-- <arg name="bag_filename" default="/home/ubuntu/dataset/home/vins1.bag"/> -->
   <arg name="tf_map_scanmatch_transform_frame_name" default="scanmatcher_frame"/>
   <arg name="base_frame" default="base_link"/>
   <arg name="odom_frame" default="base_odom"/>
@@ -39,7 +39,7 @@
     <param name="initial_position_z" value="0"/>
     <param name="initial_orientation_xyzw" value="0 0 0 1"/>
 
-    <param name="maxRange" value="30.0" />
+    <param name="maxRange" value="3.0" />
     <param name="delta" value="0.02"/>      // map resolution
     <!-- <param name="kernelSize" value="3"/> -->
 

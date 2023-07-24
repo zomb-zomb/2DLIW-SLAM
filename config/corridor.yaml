@@ -91,8 +91,8 @@ line_to_line_sigma: 0.01
 
 
 #keyfram param
-key_frame_p_motion_threshold : 0.01
-key_frame_q_motion_threshold : 0.01
+key_frame_p_motion_threshold : 0.05
+key_frame_q_motion_threshold : 0.05
 
 
 #laser loop
@@ -121,8 +121,8 @@ ref_motion_filter_p: 0.01
 ref_motion_filter_q: 0.01
 ref_n_accumulation: 100
 fast_mode: false
-
+sliding_window_size: 1
 
 #ouput
 output_tum: true
-output_dir: "/home/ubuntu/dataset/paths/corridor/2dliw10/"
+output_dir: "/home/ubuntu/dataset/paths/corridor/2dliw01/"

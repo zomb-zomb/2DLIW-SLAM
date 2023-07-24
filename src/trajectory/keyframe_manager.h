@@ -1,6 +1,8 @@
 #pragma once
 #include "trajectory/keyframe_type.h"
 #include "trajectory/trajectory_type.h"
+#include "trajectory/laser_manager.h"
+#include "trajectory/laser_type.h"
 #include "utilies/utilies.h"
 #include <fstream>
 #include "utilies/record.h"
@@ -19,6 +21,8 @@ namespace lvio_2d
 
         void show_laser_map();
 
+        
+
     private:
         std::deque<frame_info::ptr> cache_keyframes;
         std::deque<frame_info::ptr> keyframe_queue;
@@ -30,6 +34,9 @@ namespace lvio_2d
         // modify_delta_tf=new*old.inverse();
         Eigen::Isometry3d modify_delta_tf; // 记录最后一帧keyframe的修正tf
 
+        lvio_2d::laser_manager laser_manager_;
+        int cnt = 0;
+        
         int laser_frame_count;
 
         std::thread backend_thread;
@@ -49,11 +56,13 @@ namespace lvio_2d
         void main_loop();
         void show_loop();
 
-        void do_add_keyframe(const frame_info::ptr &frame_ptr);
+        void do_add_keyframe(frame_info::ptr &frame_ptr);
+        
         void get_init();
         laser_map_feature::ptr spawn_laser_map_feature();
         void solve();
         bool is_time_to_solve();
         bool is_time_to_show();
+        Eigen::Isometry3d ICP_solve_by_keyframe(int index1,int index2,Eigen::Isometry3d tf12);
     };
 } // namespace lvio_2d

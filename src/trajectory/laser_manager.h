@@ -35,6 +35,14 @@ namespace lvio_2d
                                          const Eigen::Vector3d &p2, const Eigen::Vector3d &q2,
                                          const int kk = 0);
 
+        void set_ref_submap(const laser_submap::ptr &ref_submap_ptr_)
+        {
+            ref_submap_ptr = ref_submap_ptr_;
+        }
+        laser_submap::ptr &get_ref_submap()
+        {
+            return ref_submap_ptr;
+        }
     private:
         int w;
         int h;

@@ -170,9 +170,7 @@ namespace lvio_2d
 
             LOAD_PARAM(nh, fast_mode);
 
-            // 占据栅格概率
-            LOAD_PARAM(nh, probility_occ);
-            LOAD_PARAM(nh, probility_free);
+            LOAD_PARAM(nh,sliding_window_size);
 
             if (!check_param())
                 exit(-1);
