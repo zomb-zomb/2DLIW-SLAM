@@ -6,6 +6,8 @@
 #include "trajectory/laser_manager.h"
 #include <opencv2/opencv.hpp>
 static lvio_2d::record *recorder;
+
+
 static inline int CountOnes(uint64_t n)
 {
     int count = 0;
@@ -36,6 +38,8 @@ namespace lvio_2d
 } // namespace lvio_2d
 namespace lvio_2d
 {
+    Eigen::Isometry3d ICP_solve_by_opt(std::vector<Eigen::Vector3d> &p1, std::vector<Eigen::Vector3d> &p2,
+                                    const Eigen::Isometry3d &init);
     static bool is_index_valid(const int &r, const int &c, const int &w, const int &h)
     {
         return r >= 0 && r < h && c >= 0 && c < w;
@@ -415,6 +419,47 @@ namespace lvio_2d
         }
         task_cv.notify_one();
     }
+    Eigen::Isometry3d keyframe_manager::ICP_solve_by_keyframe(int index1,int index2)
+    {
+        laser_match_point::ptr laser_match = nullptr;
+        laser_match = laser_map_feature::match_map(laser_map_features[index1], laser_map_features[index2]);
+        if(!laser_match)
+        {
+            return Eigen::Isometry3d::Identity();
+        }
+        // std::cout << "laser match" << std::endl;
+        laser_match->tf1 = tfs_tracking[index1];
+        laser_match->tf2 = tfs_tracking[index2];
+        laser_match->index1 = index1;
+        laser_match->index2 = index2;
+        laser_match->scan1 = laser_map_features[index1]->scans.front();
+        laser_match->scan2 = laser_map_features[index2]->scans.front();
+        //  P1A=P1B=T12 P2B
+        std::vector<Eigen::Vector3d> P1As;
+        std::vector<Eigen::Vector3d> P2Bs;
+        Eigen::Isometry3d tf_inv1 = (laser_match->tf1 * PARAM(T_imu_to_wheel)).inverse();
+        Eigen::Isometry3d tf_inv2 = (laser_match->tf2 * PARAM(T_imu_to_wheel)).inverse();
+        for (int i = 0; i < laser_match->p1.size(); i++)
+        {
+            Eigen::Vector3d p1 = tf_inv1 * laser_match->p1[i];
+            p1(2) = 0;
+            P1As.push_back(p1);
+            Eigen::Vector3d p2 = tf_inv2 * laser_match->p2[i];
+            p2(2) = 0;
+            P2Bs.push_back(p2);
+        }
+        Eigen::Isometry3d w_T12 = Eigen::Isometry3d::Identity();
+        Eigen::Isometry3d tf12 = laser_match->tf1.inverse() * laser_match->tf2;
+        w_T12 = ICP_solve_by_opt(P1As, P2Bs, w_T12);
+        Eigen::Isometry3d i_t12 = PARAM(T_imu_to_wheel) * w_T12 * PARAM(T_imu_to_wheel).inverse();
+
+        auto [p, q] = lie::log_SE3<double>(i_t12);
+        auto [p1, q1] = lie::log_SE3<double>(tf12);
+        // std::cout << "tf12:" << p1.transpose() << " " << q1.transpose() << std::endl;
+        // std::cout << "i_t12:" << p.transpose() << " " << q.transpose() << std::endl;
+        
+        return i_t12;
+    }    
     void keyframe_manager::do_add_keyframe(const frame_info::ptr &frame_ptr)
     {
         recorder->add_record("add keyframe", 1);
@@ -450,13 +495,19 @@ namespace lvio_2d
         if (keyframe_queue.size() > 1)
         {
             int index2 = keyframe_queue.size() - 1;
-            for(int i = 1; index2 - i > 0 && i <= 5; i++)
+            for(int i = 1; index2 - i > 0 && i <= 2; i++)
             {
                 int index1 = index2 - i;
                 std::unique_lock<std::mutex> lc(mu);
                 Eigen::Isometry3d tf1 = tfs_tracking[index1];
                 Eigen::Isometry3d tf2 = tfs_tracking[index2];
                 Eigen::Isometry3d tf12 = tf1.inverse() * tf2;
+                
+                Eigen::Isometry3d w_T12 = ICP_solve_by_keyframe(index1,index2);
+                if(! w_T12.isApprox(Eigen::Isometry3d::Identity()))
+                {
+                    tf12 = w_T12;
+                }
                 seq_edges.emplace_back(new edge(index1, index2, tf12));
             }
         }
@@ -749,6 +800,7 @@ namespace lvio_2d
             int index2 = seq_edges[i]->index2;
             auto [dp, dq] = lie::log_SE3(seq_edges[i]->tf12);
 
+            
             // ceres::CostFunction *edge_cost_function = edge_factor::Create(seq_edges[i]->tf12, dp.norm() / PARAM(key_frame_p_motion_threshold));
             ceres::CostFunction *edge_cost_function = edge_factor::Create(seq_edges[i]->tf12, 1);
 
@@ -791,7 +843,7 @@ namespace lvio_2d
             int index1 = loop_edges[i]->index1;
             int index2 = loop_edges[i]->index2;
 
-            ceres::CostFunction *edge_cost_function = edge_factor::Create(loop_edges[i]->tf12, PARAM(loop_edge_k));
+            ceres::CostFunction *edge_cost_function = loop_edge_factor::Create(loop_edges[i]->tf12, PARAM(loop_edge_k));
             problem.AddResidualBlock(
                 edge_cost_function, loss_function,
                 keyframe_queue[index1]->p.data(), keyframe_queue[index1]->q.data(),
@@ -801,7 +853,7 @@ namespace lvio_2d
             problem.SetParameterization(keyframe_queue[index2]->q.data(), so3_parameterization);
         }
 
-        if (PARAM(use_ground_p_factor))
+/*         if (PARAM(use_ground_p_factor))
         {
             for (int i = 0; i < keyframe_queue.size(); i++)
             {
@@ -822,7 +874,7 @@ namespace lvio_2d
                     keyframe_queue[i]->p.data(),
                     keyframe_queue[i]->q.data());
             }
-        }
+        } */
         ceres::Solver::Options options;
         options.linear_solver_type = ceres::SPARSE_SCHUR;
         options.use_nonmonotonic_steps = false;

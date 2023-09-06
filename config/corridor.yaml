@@ -103,7 +103,7 @@ laser_loop_min_match_threshold: 4
 loop_detect_min_interval: 300
 verify_loop_rate: 0.5
 loop_max_dis: 99999.0
-loop_edge_k: 10.0
+loop_edge_k: 20.0
 loop_max_tf_p: 1.0
 loop_max_tf_q: 0.5
 

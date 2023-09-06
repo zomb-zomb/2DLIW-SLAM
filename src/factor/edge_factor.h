@@ -110,6 +110,57 @@ namespace lvio_2d
             Eigen::Transform<T, 3, Eigen::Isometry> tf_j = lie::make_tf<T>(pj, thetaj);
 
             Eigen::Transform<T, 3, Eigen::Isometry> error = tf_j.inverse() * tf_i * tf12.template cast<T>();
+            // Eigen::Transform<T, 3, Eigen::Isometry> error = tf_i * tf_j.inverse() * tf12.template cast<T>();
+            std::tie(res_p, res_theta) = lie::log_SE3<T>(error);
+            res_all = T(weight) * edge_noise::get_edge_noise()->J.cast<T>() * res_all;
+            // res_all = T(weight) * res_all;
+
+            return true;
+        }
+
+        static ceres::CostFunction *Create(
+            const Eigen::Isometry3d &tf12_, double weight_ = 1.0)
+        {
+            return new ceres::AutoDiffCostFunction<edge_factor, 6, 3, 3, 3, 3>(
+                new edge_factor(tf12_, weight_));
+        }
+        EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
+    };
+
+    struct loop_edge_factor
+    {
+        Eigen::Isometry3d tf12;
+        double weight;
+        loop_edge_factor(const Eigen::Isometry3d &tf12_, double weight_ = 1.0) : tf12(tf12_)
+        {
+            weight = weight_;
+        }
+
+        template <typename T>
+        bool operator()(const T *const p_w_i,
+                        const T *const theta_w_i,
+                        const T *const p_w_j,
+                        const T *const theta_w_j,
+                        T *res) const
+        {
+            using vector3 = Eigen::Matrix<T, 3, 1>;
+            using vector6 = Eigen::Matrix<T, 6, 1>;
+            using matrix3 = Eigen::Matrix<T, 3, 3>;
+
+            const Eigen::Map<const vector3> pi(p_w_i);
+            const Eigen::Map<const vector3> thetai(theta_w_i);
+
+            const Eigen::Map<const vector3> pj(p_w_j);
+            const Eigen::Map<const vector3> thetaj(theta_w_j);
+
+            Eigen::Map<vector3> res_p(res);
+            Eigen::Map<vector3> res_theta(res + 3);
+            Eigen::Map<vector6> res_all(res);
+
+            Eigen::Transform<T, 3, Eigen::Isometry> tf_i = lie::make_tf<T>(pi, thetai);
+            Eigen::Transform<T, 3, Eigen::Isometry> tf_j = lie::make_tf<T>(pj, thetaj);
+
+            Eigen::Transform<T, 3, Eigen::Isometry> error = tf_j.inverse() * tf_i * tf12.template cast<T>();
 
             std::tie(res_p, res_theta) = lie::log_SE3<T>(error);
             res_all = T(weight) * edge_noise::get_edge_noise()->J.cast<T>() * res_all;
@@ -124,8 +175,7 @@ namespace lvio_2d
         }
         EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
     };
-
-    struct loop_edge_factor
+/*     struct loop_edge_factor
     {
         Eigen::Isometry3d w_tf12;
         double weight;
@@ -176,6 +226,6 @@ namespace lvio_2d
                 new loop_edge_factor(tf12_, weight_));
         }
         EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
-    };
+    }; */
 
 } // namespace lvio_2d

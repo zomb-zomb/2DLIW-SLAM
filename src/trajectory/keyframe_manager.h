@@ -55,5 +55,6 @@ namespace lvio_2d
         void solve();
         bool is_time_to_solve();
         bool is_time_to_show();
+        Eigen::Isometry3d ICP_solve_by_keyframe(int index1,int index2);
     };
 } // namespace lvio_2d
