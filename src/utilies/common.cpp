@@ -7,8 +7,8 @@ namespace convert
         float angle_start = msg->angle_min;
         float angle_increment = msg->angle_increment;
         float range_min = msg->range_min;
-        float range_max = msg->range_max;
-        // float range_max = 3;
+        // float range_max = msg->range_max;
+        float range_max = 3;
         float time_increment = msg->time_increment;
         double time = msg->header.stamp.toSec();
         std::shared_ptr<std::vector<Eigen::Vector3d>> points_ptr = std::make_shared<std::vector<Eigen::Vector3d>>();

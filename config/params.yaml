@@ -125,8 +125,8 @@ use_ground_q_factor: false
 ref_motion_filter_p: 0.01
 ref_motion_filter_q: 0.01
 ref_n_accumulation: 2
-fast_mode: false
-sliding_window_size: 5
+fast_mode: true
+
 
 #ouput
 output_tum: false

@@ -1,5 +1,4 @@
 #include "factor/camera_factor.h"
-#include <iostream>
 namespace lvio_2d
 {
     struct edge_noise
@@ -111,6 +110,7 @@ namespace lvio_2d
             Eigen::Transform<T, 3, Eigen::Isometry> tf_j = lie::make_tf<T>(pj, thetaj);
 
             Eigen::Transform<T, 3, Eigen::Isometry> error = tf_j.inverse() * tf_i * tf12.template cast<T>();
+
             std::tie(res_p, res_theta) = lie::log_SE3<T>(error);
             res_all = T(weight) * edge_noise::get_edge_noise()->J.cast<T>() * res_all;
             return true;

@@ -121,8 +121,8 @@ ref_motion_filter_p: 0.01
 ref_motion_filter_q: 0.01
 ref_n_accumulation: 2
 fast_mode: false
-sliding_window_size: 1
+
 
 #ouput
 output_tum: true 
-output_dir: "/home/ubuntu/dataset/paths/office/2dliw001/"
+output_dir: "/home/ubuntu/dataset/paths/office/2dliw2/"

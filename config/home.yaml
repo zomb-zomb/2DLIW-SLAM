@@ -97,8 +97,8 @@ line_to_line_sigma: 0.01
 
 
 #keyfram param
-key_frame_p_motion_threshold : 0.05
-key_frame_q_motion_threshold : 0.05
+key_frame_p_motion_threshold : 0.01
+key_frame_q_motion_threshold : 0.01
 
 
 #laser loop
@@ -126,9 +126,13 @@ use_ground_q_factor: true
 ref_motion_filter_p: 0.01
 ref_motion_filter_q: 0.01
 ref_n_accumulation: 100
-fast_mode: false
-sliding_window_size: 10
+fast_mode: true
+
 
 #ouput
-output_tum: false
-output_dir: "/home/ubuntu/dataset/paths/home/2dliw10/"
+output_tum: true
+output_dir: "/home/ubuntu/dataset/paths/home/2dliw4/"
+
+#占据栅格概率
+probility_occ: 1
+probility_free: 0.6

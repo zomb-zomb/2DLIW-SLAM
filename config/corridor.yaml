@@ -91,15 +91,15 @@ line_to_line_sigma: 0.01
 
 
 #keyfram param
-key_frame_p_motion_threshold : 0.05
-key_frame_q_motion_threshold : 0.05
+key_frame_p_motion_threshold : 0.01
+key_frame_q_motion_threshold : 0.01
 
 
 #laser loop
 a_res: 0.03  
 d_res: 0.03
 submap_count: 10
-laser_loop_min_match_threshold: 7
+laser_loop_min_match_threshold: 4
 loop_detect_min_interval: 300
 verify_loop_rate: 0.5
 loop_max_dis: 99999.0
@@ -121,8 +121,8 @@ ref_motion_filter_p: 0.01
 ref_motion_filter_q: 0.01
 ref_n_accumulation: 100
 fast_mode: false
-sliding_window_size: 1
+
 
 #ouput
-output_tum: true
-output_dir: "/home/ubuntu/dataset/paths/corridor/2dliw01/"
+output_tum: false
+output_dir: "/home/ubuntu/dataset/paths/corridor/2dliw10/"

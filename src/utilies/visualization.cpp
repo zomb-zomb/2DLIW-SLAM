@@ -52,6 +52,31 @@ namespace lvio_2d
             return -1;
         return y * w + x;
     }
+/*     void update_occupancy_grid(nav_msgs::OccupancyGrid &map, const Eigen::Vector3d &emit_origin,
+                               const Eigen::Vector3d &target)
+    {
+        double len = (target - emit_origin).norm();
+        Eigen::Vector3d unit = (target - emit_origin) / len;
+        double step = map.info.resolution / 2;
+        for (double tr = 0; tr <= len; tr += step)
+        {
+            Eigen::Vector3d cp = emit_origin + unit * tr;
+            int index = check_map_and_calc_index(map, cp);
+            if (index > -1 && map.data[index] == -1)
+                map.data[index] = 0;
+        }
+
+        {
+            int index = check_map_and_calc_index(map, target);
+            if (index > -1)
+            {
+                if (map.data[index] == -1 || map.data[index] == 0)
+                    map.data[index] = 50;
+                else
+                    map.data[index] = 100;
+            }
+        }
+    } */
     // gassian filter for occupancy grid
     double gaussian_filter(nav_msgs::OccupancyGrid &map, int index) 
     {
@@ -124,7 +149,10 @@ namespace lvio_2d
             m_misses[index] += 1; 
             // accroding to hits and misses to update the map
             double p_hit = (double) m_hits[index] / (m_hits[index] + m_misses[index]);
+            // double p_miss = (double) m_misses[index] / (m_hits[index] + m_misses[index]);
             double p_prior = gaussian_filter(map, index) / 100.0;
+            // double p_prior = static_cast<double>(map.data[index]) / 100.0;
+            // double p_occ = (p_hit * p_prior) / (p_hit * p_prior + p_miss * (1 - p_prior)) + 0.001;
             double p_occ = clamp(probability_from_odds(odds(p_prior) * odds(p_hit)), 0.0, 1.0) + 0.001;
             // std::cout << "p_hit: " << p_hit << " p_miss: " << p_miss << " p_prior: " << p_prior << " p_occ: " << p_occ << std::endl;   
 
@@ -143,8 +171,12 @@ namespace lvio_2d
             }
             m_hits[index] += 1; 
             double p_hit = (double)m_hits[index] / (m_hits[index] + m_misses[index]);
+            // double p_miss = (double)m_misses[index] / (m_hits[index] + m_misses[index]);
+            // double p_prior = PARAM(probility_occ);
+            // double p_prior = static_cast<double>(map.data[index]) / 100.0;
             map.data[index] = 100;
             double p_prior = gaussian_filter(map, index) / 100.0;
+            // double p_occ = (p_hit * p_prior) / (p_hit * p_prior + p_miss * (1 - p_prior)) + 0.001;
             double p_occ = clamp(probability_from_odds(odds(p_prior) * odds(p_hit)), 0.0, 1.0) + 0.001;
 
             int value = static_cast<int>(std::round(p_occ * 100));
