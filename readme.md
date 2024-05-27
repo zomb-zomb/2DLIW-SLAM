@@ -3,7 +3,7 @@
 
 ## Introduction
 
-This is a SLAM framework proposed by my master's thesis, which tightly couples the data of 2D lidar, IMU and wheel odometry.
+This is a SLAM framework which tightly couples the data of 2D lidar, IMU and wheel odometry.
 
 In addition, a lot of special processing has been done for the scene of indoor mobile robots:
 
